@@ -1,7 +1,7 @@
 #ifndef SATURN_STL_BIT_FLAG_HPP_
 #define SATURN_STL_BIT_FLAG_HPP_
 
-#include <saturn/stl/traits.hpp>
+#include <stl/traits.hpp>
 
 namespace stl {
 

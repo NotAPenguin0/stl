@@ -297,7 +297,7 @@ T& vector<T, Allocator>::back() {
 }
 
 template<typename T, typename Allocator>
-T const& vector<T, Allocator>::front() const {
+T const& vector<T, Allocator>::back() const {
     STL_ASSERT(!empty(), "back() called on empty vector");
     return _data[_size - 1];
 }
