@@ -7,12 +7,17 @@
 namespace stl {
 
 template<typename T>
-T&& forward(typename identity<T>::type&& param) { 
-    return static_cast<typename identity<T>::type&&>(param); 
+constexpr T&& forward(stl::remove_reference_t<T>& param) noexcept {
+    return static_cast<T&&>(param);
 }
 
 template<typename T>
-T&& move(T& param) {
+constexpr T&& forward(stl::remove_reference_t<T>&& param) noexcept {
+    return static_cast<T&&>(param);
+}
+
+template<typename T>
+constexpr T&& move(T& param) {
     return static_cast<T&&>(param);
 }
 

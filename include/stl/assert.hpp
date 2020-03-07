@@ -3,6 +3,6 @@
 
 #include <cassert>
 
-#define SATURN_ASSERT(cond, msg) assert(cond && msg)
+#define STL_ASSERT(cond, msg) assert(cond && msg)
 
 #endif

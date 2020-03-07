@@ -5,6 +5,8 @@
 #include <stl/allocator.hpp>
 #include <stl/memory.hpp>
 #include <stl/algorithm.hpp>
+#include <stl/assert.hpp>
+#include <stl/exception.hpp>
 
 namespace stl {
 
@@ -42,20 +44,40 @@ public:
     stl::size_t size() const;
     stl::size_t capacity() const;
 
+    bool empty() const;
+
     iterator begin();
     const_iterator begin() const;
 
     iterator end();
     const_iterator end() const;
 
+    T& operator[](stl::size_t i);
+    T const& operator[](stl::size_t i) const;
+
+    T& at(stl::size_t i);
+    T const& at(stl::size_t i) const;
+
+    T& front();
+    T const& front() const;
+
+    T& back();
+    T const& back() const;
+
     // Reserves new memory to use.
     void reserve(stl::size_t n);
     // Reserve new memory, and do not keep old data on reallocate
-    void reserve(stl::size_t n, stl::tags::uninitialized_tag);
+    void reserve(stl::tags::uninitialized_tag, stl::size_t n);
     // Resizes the vector and adds default constructed elements to the end
     void resize(stl::size_t n);
     // Resizes the vector and adds uninitialized elements at the end
-    void resize(stl::size_t n, stl::tags::uninitialized_tag);
+    void resize(stl::tags::uninitialized_tag, stl::size_t n);
+
+    void push_back(T const& value);
+    void push_back(T&& value);
+
+    template<typename... Args>
+    void emplace_back(Args&&... args);
 
 private:
     // Data
@@ -69,6 +91,9 @@ private:
     void deallocate(T* ptr, stl::size_t n);
 
     void reserve_uninitialized(stl::size_t n);
+    stl::size_t calc_grow_size() const;
+    // Grows the vector so it can hold n elements. Moves over old data
+    void grow(stl::size_t n);
 };
 
 template<typename T, typename Allocator>
@@ -205,6 +230,11 @@ stl::size_t vector<T, Allocator>::capacity() const {
 }
 
 template<typename T, typename Allocator>
+bool vector<T, Allocator>::empty() const {
+    return _size == 0;
+}
+
+template<typename T, typename Allocator>
 typename vector<T, Allocator>::iterator vector<T, Allocator>::begin() {
     return _data;
 }
@@ -225,6 +255,54 @@ typename vector<T, Allocator>::const_iterator vector<T, Allocator>::end() const 
 }
 
 template<typename T, typename Allocator>
+T& vector<T, Allocator>::operator[](stl::size_t i) {
+    STL_ASSERT(i < _size, "vector index out of range");
+    return _data[i];
+}
+
+template<typename T, typename Allocator>
+T const& vector<T, Allocator>::operator[](stl::size_t i) const {
+    STL_ASSERT(i < _size, "vector index out of range");
+    return _data[i];
+}
+
+template<typename T, typename Allocator>
+T& vector<T, Allocator>::at(stl::size_t i) {
+    if (i >= _size) throw std::out_of_range("vector index out of range");
+    return _data[i];
+}
+
+template<typename T, typename Allocator>
+T const& vector<T, Allocator>::at(stl::size_t i) const {
+    if (i >= _size) throw std::out_of_range("vector index out of range");
+    return _data[i];
+}
+
+template<typename T, typename Allocator>
+T& vector<T, Allocator>::front() {
+    STL_ASSERT(!empty(), "front() called on empty vector");
+    return _data[0];
+}
+
+template<typename T, typename Allocator>
+T const& vector<T, Allocator>::front() const {
+    STL_ASSERT(!empty(), "front() called on empty vector");
+    return _data[0];
+}
+
+template<typename T, typename Allocator>
+T& vector<T, Allocator>::back() {
+    STL_ASSERT(!empty(), "back() called on empty vector");
+    return _data[_size - 1];
+}
+
+template<typename T, typename Allocator>
+T const& vector<T, Allocator>::front() const {
+    STL_ASSERT(!empty(), "back() called on empty vector");
+    return _data[_size - 1];
+}
+
+template<typename T, typename Allocator>
 void vector<T, Allocator>::reserve(stl::size_t n) {
     // No need to allocate extra space
     if (_capacity >= n) { return; }
@@ -241,7 +319,7 @@ void vector<T, Allocator>::reserve(stl::size_t n) {
 }
 
 template<typename T, typename Allocator>
-void vector<T, Allocator>::reserve(stl::size_t n, stl::tags::uninitialized_tag) {
+void vector<T, Allocator>::reserve(stl::tags::uninitialized_tag, stl::size_t n) {
     if (_capacity >= n) { return; }
 
     destruct_n(_data, _size);
@@ -265,12 +343,48 @@ void vector<T, Allocator>::resize(stl::size_t n) {
 }
 
 template<typename T, typename Allocator>
-void vector<T, Allocator>::resize(stl::size_t n, stl::tags::uninitialized_tag) {
+void vector<T, Allocator>::resize(stl::tags::uninitialized_tag, stl::size_t n) {
     if (_size >= n) { return; }
 
     reserve(n, stl::tags::uninitialized);
     _size = n;
     // _capacity is set inside reserve()
+}
+
+template<typename T, typename Allocator>
+void vector<T, Allocator>::push_back(T const& value) {
+    // If we have reached the maximum size for our vector
+    if (_size == _capacity) {
+        grow(calc_grow_size());
+    }
+
+    // Now the index _size is guaranteed to be valid
+    inplace_construct_n(_data + _size, 1, value);
+    _size += 1;
+}
+
+template<typename T, typename Allocator>
+void vector<T, Allocator>::push_back(T&& value) {
+    // If we have reached the maximum size for our vector
+    if (_size == _capacity) {
+        grow(calc_grow_size());
+    }
+
+    // Now the index _size is guaranteed to be valid
+    new (_data + _size) T { stl::move(value) };
+    _size += 1;
+}
+
+template<typename T, typename Allocator>
+template<typename... Args>
+void vector<T, Allocator>::emplace_back(Args&&... args) {
+    if (_size == _capacity) {
+        
+        grow(calc_grow_size());
+    }
+
+    new (_data + _size) T { stl::forward<Args>(args) ... };
+    _size += 1;
 }
 
 template<typename T, typename Allocator>
@@ -287,6 +401,23 @@ template<typename T, typename Allocator>
 void vector<T, Allocator>::reserve_uninitialized(stl::size_t n) {
     _data = allocate(n);
     _capacity = n;
+}
+
+template<typename T, typename Allocator>
+stl::size_t vector<T, Allocator>::calc_grow_size() const {
+    return stl::max(1, static_cast<stl::size_t>(_capacity * 1.5));
+}
+
+template<typename T, typename Allocator>
+void vector<T, Allocator>::grow(stl::size_t n) {
+    // Allocate new array and move elements
+    T* new_data = allocate(n);
+    inplace_move_from_range(new_data, begin(), end());
+    // Deallocate old data
+    deallocate(_data, _capacity);
+    // Swap
+    _capacity = n;
+    _data = new_data;
 }
 
 } // namespace stl

@@ -60,22 +60,22 @@ public:
         }
 
         bool operator<(iterator other) const {
-            SATURN_ASSERT(direct_ref == other.direct_ref, "Cannot compare incompatible iterators");
+            STL_ASSERT(direct_ref == other.direct_ref, "Cannot compare incompatible iterators");
             return index < other.index;
         }
 
         bool operator<=(iterator other) const {
-            SATURN_ASSERT(direct_ref == other.direct_ref, "Cannot compare incompatible iterators");
+            STL_ASSERT(direct_ref == other.direct_ref, "Cannot compare incompatible iterators");
             return index <= other.index;
         }
 
         bool operator>(iterator other) const {
-            SATURN_ASSERT(direct_ref == other.direct_ref, "Cannot compare incompatible iterators");
+            STL_ASSERT(direct_ref == other.direct_ref, "Cannot compare incompatible iterators");
             return index > other.index;
         }
 
         bool operator>=(iterator other) const {
-            SATURN_ASSERT(direct_ref == other.direct_ref, "Cannot compare incompatible iterators");
+            STL_ASSERT(direct_ref == other.direct_ref, "Cannot compare incompatible iterators");
             return index >= other.index;
         }
 
@@ -131,7 +131,7 @@ public:
 
     // Returns an iterator pointing to the inserted value
     iterator insert(T value) {
-        SATURN_ASSERT(find(value) == end(), "sparse_set cannot have duplicate values.");
+        STL_ASSERT(find(value) == end(), "sparse_set cannot have duplicate values.");
 
         size_t index = direct.size();
 
