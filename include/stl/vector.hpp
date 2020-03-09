@@ -405,7 +405,7 @@ void vector<T, Allocator>::reserve_uninitialized(stl::size_t n) {
 
 template<typename T, typename Allocator>
 stl::size_t vector<T, Allocator>::calc_grow_size() const {
-    return stl::max(1, static_cast<stl::size_t>(_capacity * 1.5));
+    return stl::max(1, static_cast<stl::size_t>(_capacity * 2));
 }
 
 template<typename T, typename Allocator>
