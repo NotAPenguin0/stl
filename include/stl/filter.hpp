@@ -3,6 +3,7 @@
 
 #include <stl/iterator_traits.hpp>
 #include <stl/memory.hpp>
+#include <stl/types.hpp>
 
 #include <functional>
 
@@ -31,6 +32,8 @@ public:
         T& operator*();
         T const& operator*() const;
 
+        stl::size_t operator-(iterator const& other) const;
+
     private:
         T* ptr = nullptr;
         compare_func_t* compare_func = nullptr;
@@ -47,11 +50,13 @@ public:
     iterator begin();
     iterator end();
 
+    stl::size_t size() const;
+
 private:
     compare_func_t compare_func;
 
-    iterator first;
-    iterator last;
+    iterator _begin;
+    iterator _end;
 };
 
 template<typename T>
@@ -90,6 +95,10 @@ T const& filter_view<T>::iterator::operator*() const {
     return *ptr;
 }
 
+template<typename T>
+stl::size_t filter_view<T>::iterator::operator-(iterator const& other) const {
+    return ptr - other.ptr;
+}
 
 template<typename T>
 void filter_view<T>::iterator::advance() {
@@ -104,18 +113,23 @@ template<typename T>
 template<typename It, typename F>
 filter_view<T>::filter_view(It begin, It end, F&& func) : 
     compare_func(stl::forward<F>(func)),
-    first(&this->compare_func, begin), last(&this->compare_func, end) {
+    _begin(&this->compare_func, begin), _end(&this->compare_func, end) {
 
 }
 
 template<typename T>
 typename filter_view<T>::iterator filter_view<T>::begin() {
-    return first;
+    return _begin;
 }
 
 template<typename T>
 typename filter_view<T>::iterator filter_view<T>::end() {
-    return last;
+    return _end;
+}
+
+template<typename T>
+stl::size_t filter_view<T>::size() const {
+    return _end - _begin;
 }
 
 // Returns a filter_view with specified filter
