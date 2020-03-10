@@ -79,6 +79,13 @@ public:
     template<typename... Args>
     void emplace_back(Args&&... args);
 
+    void clear();
+    void shrink_to_fit();
+
+    // Inserts value before pos. Returns the iterator pointing to the inserted value
+    iterator insert(iterator pos, T const& value);
+    iterator insert(iterator pos, T&& value);
+
 private:
     // Data
     Allocator _allocator;
@@ -385,6 +392,62 @@ void vector<T, Allocator>::emplace_back(Args&&... args) {
 
     new (_data + _size) T { stl::forward<Args>(args) ... };
     _size += 1;
+}
+
+template<typename T, typename Allocator>
+void vector<T, Allocator>::clear() {
+    destruct_n(_data, _size);
+    _size = 0;
+}
+
+template<typename T, typename Allocator>
+void vector<T, Allocator>::shrink_to_fit() {
+    if (_size == _capacity) { return; }
+    
+    grow(_size);
+}
+
+template<typename T, typename Allocator>
+typename vector<T, Allocator>::iterator vector<T, Allocator>::insert(iterator pos, T const& value) {
+    // Avoid code duplication like a boss
+    T cpy = value;
+    return insert(stl::move(cpy));
+}
+
+template<typename T, typename Allocator>
+typename vector<T, Allocator>::iterator vector<T, Allocator>::insert(iterator pos, T&& value) {
+    if (pos == end()) { 
+        emplace_back(stl::move(value)); 
+        return end() - 1; 
+    }
+
+    T* ptr = _data;
+
+    if (_size + 1 > _capacity) {
+        ptr = allocate(calc_grow_size());
+    }
+
+    stl::size_t const index = pos - _data;
+
+    // Shift all elements starting at requested index by one. We do this in reverse order to avoid
+    // overwriting values that still have to be moved if no reallocation occurs
+    for (stl::size_t i = _size; i > index; --i) {
+        ptr[i] = stl::move(_data[i - 1]);
+    }
+
+    // Insert the value at requested index
+    ptr[index] = stl::move(value);
+
+    // If we had a reallocation, swap the pointers and also move data from before the index
+    if (_data != ptr) {
+        inplace_move_from_range(ptr, _data, _data + index);
+
+        deallocate(_data, _capacity);
+        _data = ptr;
+    }
+    
+    _size += 1;
+    return begin() + index;
 }
 
 template<typename T, typename Allocator>
