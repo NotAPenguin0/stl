@@ -66,8 +66,8 @@ unique_ptr<T>::unique_ptr(unique_ptr&& rhs) : _ptr(rhs._ptr) {
 
 template<typename T>
 template<typename U>
-unique_ptr<T>::unique_ptr(unique_ptr<U>&& rhs) : _ptr(rhs._ptr) {
-    rhs._ptr = nullptr;
+unique_ptr<T>::unique_ptr(unique_ptr<U>&& rhs) : _ptr(rhs.release()) {
+
 }
 
 template<typename T>
@@ -84,8 +84,7 @@ template<typename T>
 template<typename U>
 unique_ptr<T>& unique_ptr<T>::operator=(unique_ptr<U>&& rhs) {
     do_delete();
-    _ptr = rhs._ptr;
-    rhs._ptr = nullptr;
+    _ptr = rhs.release();
     return *this;
 }
 
