@@ -6,23 +6,6 @@
 
 namespace stl {
 
-
-// TODO: Move forward and move to another file
-template<typename T>
-constexpr T&& forward(stl::remove_reference_t<T>& param) noexcept {
-    return static_cast<T&&>(param);
-}
-
-template<typename T>
-constexpr T&& forward(stl::remove_reference_t<T>&& param) noexcept {
-    return static_cast<T&&>(param);
-}
-
-template<typename T>
-constexpr T&& move(T& param) {
-    return static_cast<T&&>(param);
-}
-
 template<typename OutputIt, typename... Args>
 void inplace_construct_n(OutputIt begin, stl::size_t n, Args&&... args) {
     using T = remove_reference_t<decltype(*begin)>;

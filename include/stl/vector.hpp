@@ -4,6 +4,7 @@
 #include <stl/tags.hpp>
 #include <stl/allocator.hpp>
 #include <stl/memory.hpp>
+#include <stl/utility.hpp>
 #include <stl/algorithm.hpp>
 #include <stl/assert.hpp>
 #include <stl/exception.hpp>
