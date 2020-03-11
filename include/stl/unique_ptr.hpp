@@ -17,8 +17,14 @@ public:
     unique_ptr(unique_ptr const&) = delete;
     unique_ptr(unique_ptr&& rhs);
 
+    template<typename U>
+    unique_ptr(unique_ptr<U>&& rhs);
+
     unique_ptr& operator=(unique_ptr const&) = delete;
     unique_ptr& operator=(unique_ptr&& rhs);
+
+    template<typename U>
+    unique_ptr& operator=(unique_ptr<U>&& rhs);
 
     ~unique_ptr();
 
@@ -59,12 +65,27 @@ unique_ptr<T>::unique_ptr(unique_ptr&& rhs) : _ptr(rhs._ptr) {
 }
 
 template<typename T>
+template<typename U>
+unique_ptr<T>::unique_ptr(unique_ptr<U>&& rhs) : _ptr(rhs._ptr) {
+    rhs._ptr = nullptr;
+}
+
+template<typename T>
 unique_ptr<T>& unique_ptr<T>::operator=(unique_ptr&& rhs) {
     if (this != &rhs) {
         do_delete();
         _ptr = rhs._ptr;
         rhs._ptr = nullptr;
     }
+    return *this;
+}
+
+template<typename T>
+template<typename U>
+unique_ptr<T>& unique_ptr<T>::operator=(unique_ptr<U>&& rhs) {
+    do_delete();
+    _ptr = rhs._ptr;
+    rhs._ptr = nullptr;
     return *this;
 }
 
