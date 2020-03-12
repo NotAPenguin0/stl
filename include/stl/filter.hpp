@@ -25,7 +25,7 @@ public:
         iterator& operator=(iterator const&) = default;  
 
         iterator& operator++();
-        iterator& operator++(int);
+        iterator operator++(int);
 
         bool operator==(iterator const& rhs) const;
         bool operator!=(iterator const& rhs) const;
@@ -70,7 +70,7 @@ typename filter_view<T>::iterator& filter_view<T>::iterator::operator++() {
 }
 
 template<typename T>
-typename filter_view<T>::iterator& filter_view<T>::iterator::operator++(int) {
+typename filter_view<T>::iterator filter_view<T>::iterator::operator++(int) {
     iterator copy = *this;
     advance();
     return copy;
