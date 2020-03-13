@@ -87,6 +87,9 @@ public:
     iterator insert(iterator pos, T const& value);
     iterator insert(iterator pos, T&& value);
 
+    // Erases the value at iterator pos. Returns the iterator pointing to the value next to it.
+    iterator erase(iterator pos);
+
 private:
     // Data
     Allocator _allocator;
@@ -449,6 +452,23 @@ typename vector<T, Allocator>::iterator vector<T, Allocator>::insert(iterator po
     
     _size += 1;
     return begin() + index;
+}
+
+template<typename T, typename Allocator>
+typename vector<T, Allocator>::iterator vector<T, Allocator>::erase(iterator pos) {
+    STL_ASSERT(pos >= begin() && pos < end(), "invalid iterator given to vector::erase()");
+
+    // Destruct the value at pos
+    destruct_n(pos, 1);
+
+    // Move all values behind it back by one
+    for (iterator it = pos; it < end() - 1; ++it) {
+        *it = stl::move(*(it + 1));
+    }
+    
+    _size -= 1;
+
+    return pos;
 }
 
 template<typename T, typename Allocator>
