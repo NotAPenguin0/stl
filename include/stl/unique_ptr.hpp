@@ -42,6 +42,9 @@ public:
     T* operator->();
     T const* operator->() const;
 
+    bool operator==(std::nullptr_t) const;
+    bool operator!=(std::nullptr_t) const;
+
 private:
     T* _ptr = nullptr;
 
@@ -143,6 +146,16 @@ template<typename T>
 T const* unique_ptr<T>::operator->() const {
     STL_ASSERT(_ptr, "Cannot dereference null unique_ptr");
     return _ptr;
+}
+
+template<typename T>
+bool unique_ptr<T>::operator==(std::nullptr_t) const {
+    return _ptr == nullptr;
+}
+
+template<typename T>
+bool unique_ptr<T>::operator!=(std::nullptr_t) const {
+    return _ptr != nullptr;
 }
 
 template<typename T>
