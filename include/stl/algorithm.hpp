@@ -4,6 +4,8 @@
 #include <stl/types.hpp>
 
 #include <cmath>
+#undef min
+#undef max
 
 namespace stl {
 
