@@ -36,6 +36,8 @@ public:
 
         bool valid() const;
 
+        leaf_type* leaf();
+
     private:
         leaf_type* _leaf = nullptr;
     };
@@ -54,6 +56,8 @@ public:
         leaf_type const* operator->() const;
 
         bool valid() const;
+
+        leaf_type const* leaf() const;
 
     private:
         leaf_type const* _leaf = nullptr;
@@ -77,6 +81,12 @@ public:
 
     template<typename F>
     void traverse(F&& f) const;
+
+    template<typename F>
+    void traverse_from(iterator it, F&& f);
+
+    template<typename F>
+    void traverse_from(const_iterator it, F&& f) const;
 
     iterator insert(iterator parent, T const& value);
     iterator insert(iterator parent, T&& value);
@@ -125,6 +135,11 @@ bool tree<T>::iterator::valid() const {
 }
 
 template<typename T>
+typename tree<T>::leaf_type* tree<T>::iterator::leaf() {
+    return _leaf;
+}
+
+template<typename T>
 tree<T>::const_iterator::const_iterator(leaf_type const* leaf) : _leaf(leaf) {
 
 }
@@ -133,7 +148,7 @@ template<typename T>
 tree<T>::const_iterator::const_iterator(iterator it) {
     if (!it.valid()) { _leaf = nullptr; }
     else {
-        _leaf = &*it;
+        _leaf = it.leaf();
     }
 }
 
@@ -151,6 +166,12 @@ template<typename T>
 bool tree<T>::const_iterator::valid() const {
     return _leaf != nullptr;
 }
+
+template<typename T>
+typename tree<T>::leaf_type const* tree<T>::const_iterator::leaf() const {
+    return _leaf;
+}
+
 
 template<typename T>
 typename tree<T>::iterator tree<T>::root() {
@@ -172,6 +193,18 @@ template<typename T>
 template<typename F>
 void tree<T>::traverse(F&& f) const {
     traverse_impl(stl::forward<F>(f), &_root, 0);
+}
+
+template<typename T>
+template<typename F>
+void tree<T>::traverse_from(iterator it, F&& f) {
+    traverse_impl(stl::forward<F>(f), it.leaf(), 0);
+}
+
+template<typename T>
+template<typename F>
+void tree<T>::traverse_from(const_iterator it, F&& f) const {
+    traverse_impl(stl::forward<F>(f), it.leaf(), 0);
 }
 
 template<typename T>
