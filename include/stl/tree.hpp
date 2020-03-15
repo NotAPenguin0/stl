@@ -67,6 +67,11 @@ public:
         iterator it;
     };
 
+    struct const_traverse_info {
+        stl::size_t level = 0;
+        const_iterator it;
+    };
+
     template<typename F>
     void traverse(F&& f);
 
@@ -182,10 +187,9 @@ void tree<T>::traverse_impl(F&& f, leaf_type* leaf, stl::size_t level) {
 template<typename T>
 template<typename F>
 void tree<T>::traverse_impl(F&& f, leaf_type const* leaf, stl::size_t level) const {
-    traverse_info info { level, iterator(leaf) };
+    const_traverse_info info { level, const_iterator(leaf) };
     f(leaf->data, info);
     for (auto const& child : leaf->children) {
-        traverse_info info { level, iterator(&child) };
         traverse_impl(f, &child, level + 1);
     }
 }
@@ -205,7 +209,7 @@ typename tree<T>::iterator tree<T>::insert(iterator parent, T&& value) {
 template<typename T>
 typename tree<T>::const_iterator tree<T>::find(T const& value) const {
     struct tree_find_impl {
-        void operator()(T const& v, traverse_info const& info) {
+        void operator()(T const& v, const_traverse_info const& info) {
             if (v == to_find) {
                 found = info.it;
             }
