@@ -3,6 +3,8 @@
 
 #include <stl/vector.hpp>
 
+#include <tuple>
+
 namespace stl {
 
 namespace detail {
@@ -88,6 +90,18 @@ public:
     template<typename F>
     void traverse_from(const_iterator it, F&& f) const;
 
+    template<typename F, typename Arg, typename... Args>
+    void traverse(F&& f, Arg&& arg, Args&&... args);
+
+    template<typename F, typename Arg, typename... Args>
+    void traverse(F&& f, Arg&& arg, Args&&... args) const;
+
+    template<typename F, typename Arg, typename... Args>
+    void traverse_from(iterator it, F&& f, Arg&& arg, Args&&... args);
+
+    template<typename F, typename Arg, typename... Args>
+    void traverse_from(const_iterator it, F&& f, Arg&& arg, Args&&... args) const;
+
     iterator insert(iterator parent, T const& value);
     iterator insert(iterator parent, T&& value);
 
@@ -102,6 +116,12 @@ private:
 
     template<typename F>
     void traverse_impl(F&& f, leaf_type const* leaf, stl::size_t level) const;
+
+    template<typename F, typename Arg, typename... Args>
+    void traverse_impl(F&& f, leaf_type* leaf, stl::size_t level, Arg&& arg, Args&&... args);
+
+    template<typename F, typename Arg, typename... Args>
+    void traverse_impl(F&& f, leaf_type const* leaf, stl::size_t level, Arg&& arg, Args&&... args) const;
 };
 
 template<typename T>
@@ -183,6 +203,8 @@ typename tree<T>::const_iterator tree<T>::root() const {
     return const_iterator(&_root);
 }
 
+// NO-ARGUMENT TRAVERSE
+
 template<typename T>
 template<typename F>
 void tree<T>::traverse(F&& f) {
@@ -210,7 +232,7 @@ void tree<T>::traverse_from(const_iterator it, F&& f) const {
 template<typename T>
 template<typename F>
 void tree<T>::traverse_impl(F&& f, leaf_type* leaf, stl::size_t level) {
-    traverse_info info { level, iterator(leaf) };
+    traverse_info info{ level, iterator(leaf) };
     f(leaf->data, info);
     for (auto& child : leaf->children) {
         traverse_impl(f, &child, level + 1);
@@ -220,10 +242,86 @@ void tree<T>::traverse_impl(F&& f, leaf_type* leaf, stl::size_t level) {
 template<typename T>
 template<typename F>
 void tree<T>::traverse_impl(F&& f, leaf_type const* leaf, stl::size_t level) const {
-    const_traverse_info info { level, const_iterator(leaf) };
+    const_traverse_info info{ level, const_iterator(leaf) };
     f(leaf->data, info);
     for (auto const& child : leaf->children) {
         traverse_impl(f, &child, level + 1);
+    }
+}
+
+// ARGUMENT TRAVERSE
+
+template<typename T>
+template<typename F, typename Arg, typename... Args>
+void tree<T>::traverse(F&& f, Arg&& arg, Args&&... args) {
+    traverse_impl(stl::forward<F>(f), &_root, 0, stl::forward<Arg>(arg), stl::forward<Args>(args) ...);
+}
+
+template<typename T>
+template<typename F, typename Arg, typename... Args>
+void tree<T>::traverse(F&& f, Arg&& arg, Args&&... args) const {
+    traverse_impl(stl::forward<F>(f), &_root, 0, stl::forward<Arg>(arg), stl::forward<Args>(args) ...);
+}
+
+template<typename T>
+template<typename F, typename Arg, typename... Args>
+void tree<T>::traverse_from(iterator it, F&& f, Arg&& arg, Args&&... args) {
+    traverse_impl(stl::forward<F>(f), it.leaf(), 0, stl::forward<Arg>(arg), stl::forward<Args>(args) ...);
+}
+
+template<typename T>
+template<typename F, typename Arg, typename... Args>
+void tree<T>::traverse_from(const_iterator it, F&& f, Arg&& arg, Args&&... args) const {
+    traverse_impl(stl::forward<F>(f), it.leaf(), 0, stl::forward<Arg>(arg), stl::forward<Args>(args) ...);
+}
+
+namespace detail {
+
+template<typename Tuple, typename F, typename... Args, stl::size_t... Is>
+auto apply_tuple_impl(Tuple& t, F&& f, Args&&... args, std::index_sequence<Is...>) {
+    return f(stl::forward<Args>(args) ..., std::get<Is>(t) ...);
+}
+
+template<typename Tuple, typename F, typename... Args>
+auto apply_tuple(Tuple& t, F&& f, Args&&... args) {
+    return apply_tuple_impl(t, stl::forward<F>(f), stl::forward<Args>(args) ..., std::make_index_sequence<std::tuple_size_v<Tuple>>{});
+}
+
+template<typename Tuple, typename F, typename... Args, stl::size_t... Is>
+auto apply_tuple_impl(Tuple const& t, F&& f, Args&&... args, std::index_sequence<Is...>) {
+    return f(stl::forward<Args>(args) ..., std::get<Is>(t) ...);
+}
+
+template<typename Tuple, typename F, typename... Args>
+auto apply_tuple(Tuple const& t, F&& f, Args&&... args) {
+    return apply_tuple_impl(t, stl::forward<F>(f), stl::forward<Args>(args) ..., std::make_index_sequence<std::tuple_size_v<Tuple>>{});
+}
+
+}
+
+template<typename T>
+template<typename F, typename Arg, typename... Args>
+void tree<T>::traverse_impl(F&& f, leaf_type* leaf, stl::size_t level, Arg&& arg, Args&&... args) {
+    traverse_info info { level, iterator(leaf) };
+    std::tuple<Arg, Args...> child_call_args = f(leaf->data, info, stl::forward<Arg>(arg), stl::forward<Args>(args) ...);
+    for (auto& child : leaf->children) {
+        auto call_traverse_impl = [this, &f, &child, level](auto&&... child_call_args) {
+            traverse_impl(stl::forward<F>(f), &child, level + 1, child_call_args ...);
+        };
+        detail::apply_tuple(child_call_args, call_traverse_impl);
+    }
+}
+
+template<typename T>
+template<typename F, typename Arg, typename... Args>
+void tree<T>::traverse_impl(F&& f, leaf_type const* leaf, stl::size_t level, Arg&& arg, Args&&... args) const {
+    const_traverse_info info{ level, const_iterator(leaf) };
+    std::tuple<Arg, Args...> child_call_args = f(leaf->data, info, stl::forward<Arg>(arg), stl::forward<Args>(args) ...);
+    for (auto& child : leaf->children) {
+        auto call_traverse_impl = [this, &f, &child, level](auto&&... child_call_args) {
+            traverse_impl(stl::forward<F>(f), &child, level + 1, child_call_args ...);
+        };
+        detail::apply_tuple(child_call_args, call_traverse_impl);
     }
 }
 
