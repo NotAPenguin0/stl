@@ -45,9 +45,11 @@ public:
         bool valid() const;
 
         leaf_type* leaf();
+        leaf_type* parent();
 
     private:
         leaf_type* _leaf = nullptr;
+        leaf_type* _parent = nullptr;
     };
 
     class const_iterator {
@@ -66,9 +68,11 @@ public:
         bool valid() const;
 
         leaf_type const* leaf() const;
+        leaf_type const* parent() const;
 
     private:
         leaf_type const* _leaf = nullptr;
+        leaf_type const* _parent = nullptr;
     };
 
     iterator root();
@@ -146,7 +150,9 @@ private:
 
 template<typename T>
 tree<T>::iterator::iterator(leaf_type* leaf) : _leaf(leaf) {
-
+    if (leaf && leaf->parent) {
+        _parent = leaf->parent;
+    }
 }
 
 template<typename T>
@@ -180,8 +186,15 @@ typename tree<T>::leaf_type* tree<T>::iterator::leaf() {
 }
 
 template<typename T>
-tree<T>::const_iterator::const_iterator(leaf_type const* leaf) : _leaf(leaf) {
+typename tree<T>::leaf_type* tree<T>::iterator::parent() {
+    return _parent;
+}
 
+template<typename T>
+tree<T>::const_iterator::const_iterator(leaf_type const* leaf) : _leaf(leaf) {
+    if (leaf && leaf->parent) {
+        _parent = leaf->parent;
+    }
 }
 
 template<typename T>
@@ -210,6 +223,11 @@ bool tree<T>::const_iterator::valid() const {
 template<typename T>
 typename tree<T>::leaf_type const* tree<T>::const_iterator::leaf() const {
     return _leaf;
+}
+
+template<typename T>
+typename tree<T>::leaf_type const* tree<T>::const_iterator::parent() const {
+    return _parent;
 }
 
 
@@ -337,7 +355,7 @@ auto apply_tuple(Tuple const& t, F&& f, Args&&... args) {
 template<typename T>
 template<typename F, typename Arg, typename... Args>
 void tree<T>::traverse_impl(F&& f, leaf_type* leaf, stl::size_t level, Arg&& arg, Args&&... args) {
-    traverse_info info { level, iterator(leaf), iterator(leaf->parent)};
+    traverse_info info { level, iterator(leaf), iterator(leaf).parent() };
     auto child_call_args = f(leaf->data, info, stl::forward<Arg>(arg), stl::forward<Args>(args) ...);
     for (auto& child : leaf->children) {
         auto call_traverse_impl = [this, &f, &child, level](auto&&... child_call_args) {
@@ -350,7 +368,7 @@ void tree<T>::traverse_impl(F&& f, leaf_type* leaf, stl::size_t level, Arg&& arg
 template<typename T>
 template<typename F, typename Arg, typename... Args>
 void tree<T>::traverse_impl(F&& f, leaf_type const* leaf, stl::size_t level, Arg&& arg, Args&&... args) const {
-    const_traverse_info info{ level, const_iterator(leaf), const_iterator(leaf->parent) };
+    const_traverse_info info{ level, const_iterator(leaf), const_iterator(leaf).parent() };
     auto child_call_args = f(leaf->data, info, stl::forward<Arg>(arg), stl::forward<Args>(args) ...);
     for (auto& child : leaf->children) {
         auto call_traverse_impl = [this, &f, &child, level](auto&&... child_call_args) {
@@ -363,7 +381,7 @@ void tree<T>::traverse_impl(F&& f, leaf_type const* leaf, stl::size_t level, Arg
 template<typename T>
 template<typename F, typename PostF, typename Arg, typename... Args>
 void tree<T>::traverse_impl(F&& f, PostF&& post_callback, leaf_type* leaf, stl::size_t level, Arg&& arg, Args&&... args) {
-    traverse_info info { level, iterator(leaf), iterator(leaf->parent) };
+    traverse_info info { level, iterator(leaf), iterator(leaf).parent() };
     auto child_call_args = f(leaf->data, info, stl::forward<Arg>(arg), stl::forward<Args>(args) ...);
     for (auto& child : leaf->children) {
         auto call_traverse_impl = [this, &f, &post_callback, &child, level](auto&&... child_call_args) {
@@ -378,7 +396,7 @@ void tree<T>::traverse_impl(F&& f, PostF&& post_callback, leaf_type* leaf, stl::
 template<typename T>
 template<typename F, typename PostF, typename Arg, typename... Args>
 void tree<T>::traverse_impl(F&& f, PostF&& post_callback, leaf_type const* leaf, stl::size_t level, Arg&& arg, Args&&... args) const {
-    const_traverse_info info{ level, const_iterator(leaf), const_iterator(leaf->parent) };
+    const_traverse_info info{ level, const_iterator(leaf), const_iterator(leaf).parent() };
     auto child_call_args = f(leaf->data, info, stl::forward<Arg>(arg), stl::forward<Args>(args) ...);
     for (auto& child : leaf->children) {
         auto call_traverse_impl = [this, &f, &post_callback, &child, level](auto&&... child_call_args) {
