@@ -13,6 +13,7 @@ template<typename T>
 struct tree_node {
     T data = T{};
     stl::vector<tree_node<T>> children = {};
+    tree_node<T>* parent = nullptr;
 };
 
 } // namespace detail
@@ -71,11 +72,13 @@ public:
     struct traverse_info {
         stl::size_t level = 0;
         iterator it;
+        iterator parent;
     };
 
     struct const_traverse_info {
         stl::size_t level = 0;
         const_iterator it;
+        const_iterator parent;
     };
 
     template<typename F>
@@ -95,6 +98,12 @@ public:
 
     template<typename F, typename Arg, typename... Args>
     void traverse(F&& f, Arg&& arg, Args&&... args) const;
+
+    template<typename F, typename PostF, typename Arg, typename... Args>
+    void traverse(F&& f, PostF&& post_callback, Arg&& arg, Args&&... args);
+
+    template<typename F, typename PostF, typename Arg, typename... Args>
+    void traverse(F&& f, PostF&& post_callback, Arg&& arg, Args&&... args) const;
 
     template<typename F, typename Arg, typename... Args>
     void traverse_from(iterator it, F&& f, Arg&& arg, Args&&... args);
@@ -122,6 +131,12 @@ private:
 
     template<typename F, typename Arg, typename... Args>
     void traverse_impl(F&& f, leaf_type const* leaf, stl::size_t level, Arg&& arg, Args&&... args) const;
+    
+    template<typename F, typename PostF, typename Arg, typename... Args>
+    void traverse_impl(F&& f, PostF&& post_callback, leaf_type* leaf, stl::size_t level, Arg&& arg, Args&&... args);
+
+    template<typename F, typename PostF, typename Arg, typename... Args>
+    void traverse_impl(F&& f, PostF&& post_callback, leaf_type const* leaf, stl::size_t level, Arg&& arg, Args&&... args) const;
 };
 
 template<typename T>
@@ -263,6 +278,21 @@ void tree<T>::traverse(F&& f, Arg&& arg, Args&&... args) const {
     traverse_impl(stl::forward<F>(f), &_root, 0, stl::forward<Arg>(arg), stl::forward<Args>(args) ...);
 }
 
+// Post callback
+template<typename T>
+template<typename F, typename PostF, typename Arg, typename... Args>
+void tree<T>::traverse(F&& f, PostF&& post_callback, Arg&& arg, Args&&... args) {
+    traverse_impl(stl::forward<F>(f), stl::forward<PostF>(post_callback), 
+        &_root, 0, stl::forward<Arg>(arg), stl::forward<Args>(args) ...);
+}
+
+template<typename T>
+template<typename F, typename PostF, typename Arg, typename... Args>
+void tree<T>::traverse(F&& f, PostF&& post_callback, Arg&& arg, Args&&... args) const {
+    traverse_impl(stl::forward<F>(f), stl::forward<PostF>(post_callback),
+        &_root, 0, stl::forward<Arg>(arg), stl::forward<Args>(args) ...);
+}
+
 template<typename T>
 template<typename F, typename Arg, typename... Args>
 void tree<T>::traverse_from(iterator it, F&& f, Arg&& arg, Args&&... args) {
@@ -302,8 +332,8 @@ auto apply_tuple(Tuple const& t, F&& f, Args&&... args) {
 template<typename T>
 template<typename F, typename Arg, typename... Args>
 void tree<T>::traverse_impl(F&& f, leaf_type* leaf, stl::size_t level, Arg&& arg, Args&&... args) {
-    traverse_info info { level, iterator(leaf) };
-    std::tuple<Arg, Args...> child_call_args = f(leaf->data, info, stl::forward<Arg>(arg), stl::forward<Args>(args) ...);
+    traverse_info info { level, iterator(leaf), iterator(leaf->parent)};
+    auto child_call_args = f(leaf->data, info, stl::forward<Arg>(arg), stl::forward<Args>(args) ...);
     for (auto& child : leaf->children) {
         auto call_traverse_impl = [this, &f, &child, level](auto&&... child_call_args) {
             traverse_impl(stl::forward<F>(f), &child, level + 1, child_call_args ...);
@@ -315,14 +345,43 @@ void tree<T>::traverse_impl(F&& f, leaf_type* leaf, stl::size_t level, Arg&& arg
 template<typename T>
 template<typename F, typename Arg, typename... Args>
 void tree<T>::traverse_impl(F&& f, leaf_type const* leaf, stl::size_t level, Arg&& arg, Args&&... args) const {
-    const_traverse_info info{ level, const_iterator(leaf) };
-    std::tuple<Arg, Args...> child_call_args = f(leaf->data, info, stl::forward<Arg>(arg), stl::forward<Args>(args) ...);
+    const_traverse_info info{ level, const_iterator(leaf), const_iterator(leaf->parent) };
+    auto child_call_args = f(leaf->data, info, stl::forward<Arg>(arg), stl::forward<Args>(args) ...);
     for (auto& child : leaf->children) {
         auto call_traverse_impl = [this, &f, &child, level](auto&&... child_call_args) {
             traverse_impl(stl::forward<F>(f), &child, level + 1, child_call_args ...);
         };
         detail::apply_tuple(child_call_args, call_traverse_impl);
     }
+}
+
+template<typename T>
+template<typename F, typename PostF, typename Arg, typename... Args>
+void tree<T>::traverse_impl(F&& f, PostF&& post_callback, leaf_type* leaf, stl::size_t level, Arg&& arg, Args&&... args) {
+    traverse_info info { level, iterator(leaf), iterator(leaf->parent) };
+    auto child_call_args = f(leaf->data, info, stl::forward<Arg>(arg), stl::forward<Args>(args) ...);
+    for (auto& child : leaf->children) {
+        auto call_traverse_impl = [this, &f, &post_callback, &child, level](auto&&... child_call_args) {
+            traverse_impl(stl::forward<F>(f), stl::forward<PostF>(post_callback), &child, level + 1, child_call_args ...);
+        };
+        detail::apply_tuple(child_call_args, call_traverse_impl);
+    }
+    // After a node has been processed, call the post callback
+    post_callback(leaf->data, info, stl::forward<Arg>(arg), stl::forward<Args>(args) ...);
+}
+
+template<typename T>
+template<typename F, typename PostF, typename Arg, typename... Args>
+void tree<T>::traverse_impl(F&& f, PostF&& post_callback, leaf_type const* leaf, stl::size_t level, Arg&& arg, Args&&... args) const {
+    const_traverse_info info{ level, const_iterator(leaf), const_iterator(leaf->parent) };
+    auto child_call_args = f(leaf->data, info, stl::forward<Arg>(arg), stl::forward<Args>(args) ...);
+    for (auto& child : leaf->children) {
+        auto call_traverse_impl = [this, &f, &post_callback, &child, level](auto&&... child_call_args) {
+            traverse_impl(stl::forward<F>(f), stl::forward<PostF>(post_callback), &child, level + 1, child_call_args ...);
+        };
+        detail::apply_tuple(child_call_args, call_traverse_impl);
+    }
+    post_callback(leaf->data, info, stl::forward<Arg>(arg), stl::forward<Args>(args) ...);
 }
 
 template<typename T>
@@ -333,7 +392,7 @@ typename tree<T>::iterator tree<T>::insert(iterator parent, T const& value) {
 
 template<typename T>
 typename tree<T>::iterator tree<T>::insert(iterator parent, T&& value) {
-    parent->children.emplace_back(stl::move(value), stl::vector<leaf_type>{});
+    parent->children.emplace_back(stl::move(value), stl::vector<leaf_type>{}, parent->leaf());
     return iterator(&parent->children.back());
 }
 
