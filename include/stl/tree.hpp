@@ -2,6 +2,7 @@
 #define STL_TREE_HPP_
 
 #include <stl/vector.hpp>
+#include <list>
 
 #include <tuple>
 
@@ -9,10 +10,14 @@ namespace stl {
 
 namespace detail {
 
+// Rip cache, might need a better solution
+template<typename T>
+using children_storage = std::list<T>;
+
 template<typename T>
 struct tree_node {
     T data = T{};
-    stl::vector<tree_node<T>> children = {};
+    children_storage<tree_node<T>> children = {};
     tree_node<T>* parent = nullptr;
 };
 
@@ -392,7 +397,7 @@ typename tree<T>::iterator tree<T>::insert(iterator parent, T const& value) {
 
 template<typename T>
 typename tree<T>::iterator tree<T>::insert(iterator parent, T&& value) {
-    parent->children.emplace_back(stl::move(value), stl::vector<leaf_type>{}, parent.leaf());
+    parent->children.push_back(leaf_type{ stl::move(value), detail::children_storage<leaf_type>{}, parent.leaf() });
     return iterator(&parent->children.back());
 }
 
