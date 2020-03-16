@@ -392,7 +392,7 @@ typename tree<T>::iterator tree<T>::insert(iterator parent, T const& value) {
 
 template<typename T>
 typename tree<T>::iterator tree<T>::insert(iterator parent, T&& value) {
-    parent->children.emplace_back(stl::move(value), stl::vector<leaf_type>{}, parent->leaf());
+    parent->children.emplace_back(stl::move(value), stl::vector<leaf_type>{}, parent.leaf());
     return iterator(&parent->children.back());
 }
 
