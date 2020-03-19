@@ -110,6 +110,23 @@ struct remove_reference<T&&> {
 template<typename T>
 using remove_reference_t = typename remove_reference<T>::type;
 
+
+template<bool B, typename T, typename U>
+struct conditional;
+
+template<typename T, typename U>
+struct conditional<true, T, U> {
+    using type = T;
+};
+
+template<typename T, typename U>
+struct conditional<false, T, U> {
+    using type = U;
+};
+
+template<bool B, typename T, typename U>
+using conditional_t = typename conditional<B, T, U>::type;
+
 } // namespace stl
 
 #endif
