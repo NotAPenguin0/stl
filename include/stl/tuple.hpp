@@ -136,8 +136,8 @@ public:
 };
 
 template<typename... Ts>
-tuple<Ts...> make_tuple(Ts&&... values) {
-    return tuple<Ts...>(stl::forward<Ts>(values) ...);
+tuple<stl::remove_reference_t<Ts>...> make_tuple(Ts&&... values) {
+    return tuple<stl::remove_reference_t<Ts>...>(stl::forward<Ts>(values) ...);
 }
 
 template<typename... Ts>

@@ -4,7 +4,7 @@
 #include <stl/vector.hpp>
 #include <list>
 
-#include <tuple>
+#include <stl/tuple.hpp>
 
 namespace stl {
 
@@ -331,23 +331,23 @@ void tree<T>::traverse_from(const_iterator it, F&& f, Arg&& arg, Args&&... args)
 namespace detail {
 
 template<typename Tuple, typename F, typename... Args, stl::size_t... Is>
-auto apply_tuple_impl(Tuple& t, F&& f, Args&&... args, std::index_sequence<Is...>) {
-    return f(stl::forward<Args>(args) ..., std::get<Is>(t) ...);
+auto apply_tuple_impl(Tuple& t, F&& f, Args&&... args, stl::index_sequence<Is...>) {
+    return f(stl::forward<Args>(args) ..., stl::get<Is>(t) ...);
 }
 
 template<typename Tuple, typename F, typename... Args>
 auto apply_tuple(Tuple& t, F&& f, Args&&... args) {
-    return apply_tuple_impl(t, stl::forward<F>(f), stl::forward<Args>(args) ..., std::make_index_sequence<std::tuple_size_v<Tuple>>{});
+    return apply_tuple_impl(t, stl::forward<F>(f), stl::forward<Args>(args) ..., stl::make_index_sequence<stl::tuple_size_v<Tuple>>{});
 }
 
 template<typename Tuple, typename F, typename... Args, stl::size_t... Is>
-auto apply_tuple_impl(Tuple const& t, F&& f, Args&&... args, std::index_sequence<Is...>) {
-    return f(stl::forward<Args>(args) ..., std::get<Is>(t) ...);
+auto apply_tuple_impl(Tuple const& t, F&& f, Args&&... args, stl::index_sequence<Is...>) {
+    return f(stl::forward<Args>(args) ..., stl::get<Is>(t) ...);
 }
 
 template<typename Tuple, typename F, typename... Args>
 auto apply_tuple(Tuple const& t, F&& f, Args&&... args) {
-    return apply_tuple_impl(t, stl::forward<F>(f), stl::forward<Args>(args) ..., std::make_index_sequence<std::tuple_size_v<Tuple>>{});
+    return apply_tuple_impl(t, stl::forward<F>(f), stl::forward<Args>(args) ..., stl::make_index_sequence<stl::tuple_size_v<Tuple>>{});
 }
 
 } // namespace detail
