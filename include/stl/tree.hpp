@@ -31,7 +31,7 @@ public:
     class iterator {
     public:
         iterator() = default;
-        iterator(leaf_type* leaf);
+        iterator(leaf_type* leaf) noexcept;
 
         iterator(iterator const&) = default;
         iterator& operator=(iterator const&) = default;
@@ -42,10 +42,10 @@ public:
         leaf_type* operator->();
         leaf_type const* operator->() const;
 
-        bool valid() const;
+        bool valid() const noexcept;
 
-        leaf_type* leaf();
-        leaf_type* parent();
+        leaf_type* leaf() noexcept;
+        leaf_type* parent() noexcept;
 
     private:
         leaf_type* _leaf = nullptr;
@@ -55,8 +55,8 @@ public:
     class const_iterator {
     public:
         const_iterator() = default;
-        const_iterator(iterator it);
-        const_iterator(leaf_type const* leaf);
+        const_iterator(iterator it) noexcept;
+        const_iterator(leaf_type const* leaf) noexcept;
 
         const_iterator(const_iterator const&) = default;
         const_iterator& operator=(const_iterator const&) = default;
@@ -65,10 +65,10 @@ public:
 
         leaf_type const* operator->() const;
 
-        bool valid() const;
+        bool valid() const noexcept;
 
-        leaf_type const* leaf() const;
-        leaf_type const* parent() const;
+        leaf_type const* leaf() const noexcept;
+        leaf_type const* parent() const noexcept;
 
     private:
         leaf_type const* _leaf = nullptr;
@@ -123,8 +123,8 @@ public:
     iterator insert(iterator parent, T const& value);
     iterator insert(iterator parent, T&& value);
 
-    const_iterator find(T const& value) const;
     iterator find(T const& value);
+    const_iterator find(T const& value) const;
 
 private:
     leaf_type _root;
@@ -166,12 +166,12 @@ T const& tree<T>::iterator::operator*() const {
 }
 
 template<typename T>
-typename tree<T>::leaf_type* tree<T>::iterator::operator->() {
+auto tree<T>::iterator::operator->() -> leaf_type* {
     return _leaf;
 }
 
 template<typename T>
-typename tree<T>::leaf_type const* tree<T>::iterator::operator->() const {
+auto tree<T>::iterator::operator->() const -> leaf_type const* {
     return _leaf;
 }
 
@@ -181,12 +181,12 @@ bool tree<T>::iterator::valid() const {
 }
 
 template<typename T>
-typename tree<T>::leaf_type* tree<T>::iterator::leaf() {
+auto tree<T>::iterator::leaf() -> leaf_type* {
     return _leaf;
 }
 
 template<typename T>
-typename tree<T>::leaf_type* tree<T>::iterator::parent() {
+auto tree<T>::iterator::parent() -> leaf_type* {
     return _parent;
 }
 
@@ -211,7 +211,7 @@ T const& tree<T>::const_iterator::operator*() const {
 }
 
 template<typename T>
-typename tree<T>::leaf_type const* tree<T>::const_iterator::operator->() const {
+auto tree<T>::const_iterator::operator->() const -> leaf_type const*  {
     return _leaf;
 }
 
@@ -221,23 +221,23 @@ bool tree<T>::const_iterator::valid() const {
 }
 
 template<typename T>
-typename tree<T>::leaf_type const* tree<T>::const_iterator::leaf() const {
+auto tree<T>::const_iterator::leaf() const -> leaf_type const* {
     return _leaf;
 }
 
 template<typename T>
-typename tree<T>::leaf_type const* tree<T>::const_iterator::parent() const {
+auto tree<T>::const_iterator::parent() const -> leaf_type const* {
     return _parent;
 }
 
 
 template<typename T>
-typename tree<T>::iterator tree<T>::root() {
+auto tree<T>::root() -> iterator {
     return iterator(&_root);
 }
 
 template<typename T>
-typename tree<T>::const_iterator tree<T>::root() const {
+auto tree<T>::root() const -> const_iterator {
     return const_iterator(&_root);
 }
 
@@ -408,19 +408,19 @@ void tree<T>::traverse_impl(F&& f, PostF&& post_callback, leaf_type const* leaf,
 }
 
 template<typename T>
-typename tree<T>::iterator tree<T>::insert(iterator parent, T const& value) {
+auto tree<T>::insert(iterator parent, T const& value) -> iterator {
     T v = value;
     return insert(parent, stl::move(v));
 }
 
 template<typename T>
-typename tree<T>::iterator tree<T>::insert(iterator parent, T&& value) {
+auto tree<T>::insert(iterator parent, T&& value) -> iterator {
     parent->children.push_back(leaf_type{ stl::move(value), detail::children_storage<leaf_type>{}, parent.leaf() });
     return iterator(&parent->children.back());
 }
 
 template<typename T>
-typename tree<T>::const_iterator tree<T>::find(T const& value) const {
+auto tree<T>::find(T const& value) const -> const_iterator {
     struct tree_find_impl {
         void operator()(T const& v, const_traverse_info const& info) {
             if (v == to_find) {
@@ -437,7 +437,7 @@ typename tree<T>::const_iterator tree<T>::find(T const& value) const {
 }
 
 template<typename T>
-typename tree<T>::iterator tree<T>::find(T const& value) {
+auto tree<T>::find(T const& value) -> iterator {
     struct tree_find_impl {
         void operator()(T const& v, traverse_info const& info) {
             if (v == to_find) {
