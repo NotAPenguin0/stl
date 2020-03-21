@@ -20,7 +20,7 @@ public:
         struct return_type<0> { using type = stl::size_t; };
 
         template<>
-        struct return_type<1> { using type = T; };
+        struct return_type<1> { using type = T&; };
     public:
         T& value;
         stl::size_t index = 0;
@@ -29,12 +29,12 @@ public:
         typename return_type<N>::type _internal_get() {}
 
         template<>
-        typename return_type<0>::type _internal_get<0>() {
+        stl::size_t _internal_get<0>() {
             return index;
         }
 
         template<>
-        typename return_type<1>::type _internal_get<1>() {
+        T& _internal_get<1>() {
             return value;
         }
     };
@@ -57,12 +57,12 @@ public:
         typename return_type<N>::type _internal_get() const {}
 
         template<>
-        typename return_type<0>::type const& _internal_get<0>() const {
+        stl::size_t _internal_get<0>() const {
             return index;
         }
 
         template<>
-        typename return_type<1>::type _internal_get<1>() const {
+        T const& _internal_get<1>() const {
             return value;
         }
     };
