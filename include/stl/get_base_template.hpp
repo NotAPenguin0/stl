@@ -15,6 +15,20 @@ auto const& get(T const& t) {
     return t.template _internal_get<I>();
 }
 
+namespace detail {
+    
+template<stl::size_t I, typename T>
+auto& get(T& t) {
+    return t.template _internal_get<I>();
+}
+
+template<stl::size_t I, typename T>
+auto const& get(T const& t) {
+    return t.template _internal_get<I>();
+}
+
+} // namespace detail
+
 } // namespace stl
 
 #endif

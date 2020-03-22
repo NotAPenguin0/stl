@@ -8,65 +8,25 @@
 
 namespace stl {
 
+namespace detail {
+
+template<typename T>
+struct enumerate_value_type {
+    stl::size_t index;
+    T& value;
+};
+
+template<typename T>
+struct const_enumerate_value_type {
+    stl::size_t _index = 0;
+    T const& _value;
+};
+
+} // namespace detail
+
 template<typename T>
 class enumerate_view {
-public:
-    struct value_type {
-    private:
-        template<stl::size_t N>
-        struct return_type { using type = void; };
-
-        template<>
-        struct return_type<0> { using type = stl::size_t; };
-
-        template<>
-        struct return_type<1> { using type = T&; };
-    public:
-        T& value;
-        stl::size_t index = 0;
-
-        template<stl::size_t N>
-        typename return_type<N>::type _internal_get() {}
-
-        template<>
-        stl::size_t _internal_get<0>() {
-            return index;
-        }
-
-        template<>
-        T& _internal_get<1>() {
-            return value;
-        }
-    };
-
-    struct const_value_type {
-    private:
-        template<stl::size_t N>
-        struct return_type { using type = void; };
-
-        template<>
-        struct return_type<0> { using type = stl::size_t; };
-
-        template<>
-        struct return_type<1> { using type = T const&; };
-    public:
-        T const& value;
-        stl::size_t index = 0;
-
-        template<stl::size_t N>
-        typename return_type<N>::type _internal_get() const {}
-
-        template<>
-        stl::size_t _internal_get<0>() const {
-            return index;
-        }
-
-        template<>
-        T const& _internal_get<1>() const {
-            return value;
-        }
-    };
-
+public:  
     class iterator {
     public:
         iterator() = default;
@@ -81,8 +41,8 @@ public:
         bool operator==(iterator const& rhs) const;
         bool operator!=(iterator const& rhs) const;
 
-        value_type operator*();
-        const_value_type operator*() const;
+        detail::enumerate_value_type<T> operator*();
+        detail::const_enumerate_value_type<T> operator*() const;
         
     private:
         T* _ptr = nullptr;
@@ -137,13 +97,13 @@ bool enumerate_view<T>::iterator::operator!=(iterator const& rhs) const {
 }
 
 template<typename T>
-typename enumerate_view<T>::value_type enumerate_view<T>::iterator::operator*() {
-    return { *_ptr, _index };
+detail::enumerate_value_type<T> enumerate_view<T>::iterator::operator*() {
+    return { _index, *_ptr };
 }
 
 template<typename T>
-typename enumerate_view<T>::const_value_type enumerate_view<T>::iterator::operator*() const {
-    return { *_ptr, _index };
+detail::const_enumerate_value_type<T> enumerate_view<T>::iterator::operator*() const {
+    return { _index, *_ptr };
 }
 
 template<typename T>
