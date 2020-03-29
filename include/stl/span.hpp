@@ -9,6 +9,8 @@ namespace stl {
 template<typename T>
 class span {
 public:
+    using iterator = T*;
+
     template<typename It>
     span(It begin, It end);
 
@@ -23,6 +25,9 @@ public:
 
     T* end();
     T const* end() const;
+
+    T& operator[](stl::size_t index);
+    T const& operator[](stl::size_t index) const;
 
     stl::size_t size() const;
 
@@ -61,6 +66,18 @@ T* span<T>::end() {
 template<typename T>
 T const* span<T>::end() const {
     return _begin + _size;
+}
+
+template<typename T>
+T& span<T>::operator[](stl::size_t index) {
+    STL_ASSERT(index < _size, "span index out of range");
+    return _begin[index];
+}
+
+template<typename T>
+T const& span<T>::operator[](stl::size_t index) const {
+    STL_ASSERT(index < _size, "span index out of range");
+    return _begin[index];
 }
 
 template<typename T>
