@@ -78,7 +78,7 @@ public:
     void push_back(T&& value);
 
     template<typename... Args>
-    void emplace_back(Args&&... args);
+    T& emplace_back(Args&&... args);
 
     void clear();
     void shrink_to_fit();
@@ -388,7 +388,7 @@ void vector<T, Allocator>::push_back(T&& value) {
 
 template<typename T, typename Allocator>
 template<typename... Args>
-void vector<T, Allocator>::emplace_back(Args&&... args) {
+T& vector<T, Allocator>::emplace_back(Args&&... args) {
     if (_size == _capacity) {
         
         grow(calc_grow_size());
@@ -396,6 +396,8 @@ void vector<T, Allocator>::emplace_back(Args&&... args) {
 
     new (_data + _size) T { stl::forward<Args>(args) ... };
     _size += 1;
+
+    return back();
 }
 
 template<typename T, typename Allocator>

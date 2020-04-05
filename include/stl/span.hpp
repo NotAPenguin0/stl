@@ -10,6 +10,9 @@ template<typename T>
 class span {
 public:
     using iterator = T*;
+    
+    span() = default;
+    span(T* first, size_t count) : _begin(first), _size(count) {}
 
     template<typename It>
     span(It begin, It end);
@@ -32,8 +35,8 @@ public:
     stl::size_t size() const;
 
 private:
-    T* _begin;
-    stl::size_t _size;
+    T* _begin = nullptr;
+    stl::size_t _size = 0;
 };
 
 template<typename T>
